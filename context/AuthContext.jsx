@@ -37,8 +37,11 @@ export const AuthProvider = ({ children }) => {
       const { jwt, user: userData } = response.data;
       setToken(jwt);
       setUser(userData);
+      // Store in localStorage AND cookies (for middleware)
       localStorage.setItem("jwt", jwt);
       localStorage.setItem("user", JSON.stringify(userData));
+      Cookies.set("jwt", jwt);
+      Cookies.set("user_type", userData.user_type);
 
       return { success: true, user: userData };
     } catch (error) {
@@ -62,6 +65,8 @@ export const AuthProvider = ({ children }) => {
       setUser(userData);
       localStorage.setItem("jwt", jwt);
       localStorage.setItem("user", JSON.stringify(userData));
+      Cookies.set("jwt", jwt);
+      Cookies.set("user_type", userData.user_type);
 
       return { success: true, user: userData };
     } catch (error) {
@@ -78,6 +83,8 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
     localStorage.removeItem("jwt");
     localStorage.removeItem("user");
+    Cookies.remove("jwt");
+    Cookies.remove("user_type");
     router.push("/auth/login");
   };
 
