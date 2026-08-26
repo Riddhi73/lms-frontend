@@ -9,6 +9,7 @@ export default function Home() {
   const { user, isAuthenticated, logout } = useAuth();
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [enrolling, setEnrolling] = useState({});
 
   useEffect(() => {
     const fetchCourses = async () => {
@@ -27,6 +28,24 @@ export default function Home() {
     fetchCourses();
   }, []);
 
+  const handleEnroll = async (courseId) => {
+    setEnrolling((prev) => ({ ...prev, [courseId]: true }));
+    try {
+      await axiosInstance.post("/api/enrollments", {
+        data: {
+          student: user.id,
+          course: courseId,
+        },
+      });
+      alert("✅ Successfully enrolled!");
+    } catch (error) {
+      console.error("Enrollment error:", error);
+      alert("❌ Failed to enroll. You might already be enrolled.");
+    } finally {
+      setEnrolling((prev) => ({ ...prev, [courseId]: false }));
+    }
+  };
+
   if (loading) {
     return <div className="p-8 text-center text-xl">Loading courses...</div>;
   }
@@ -41,8 +60,18 @@ export default function Home() {
               <span className="text-sm text-gray-600">
                 👋 {user?.username} ({user?.user_type})
               </span>
+              <Link
+                href="/dashboard"
+                className="text-sm bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700"
+              >
+                My Courses
+              </Link>
+
               <button
-                onClick={logout}
+                onClick={() => {
+                  // Logout logic from context
+                  window.location.href = "/auth/login";
+                }}
                 className="text-sm bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
               >
                 Logout
@@ -70,6 +99,15 @@ export default function Home() {
               <p className="text-sm text-blue-500 mt-2">
                 Lessons: {course.lessons?.length || 0}
               </p>
+              {isAuthenticated && userType === "student" && (
+                <button
+                  onClick={() => handleEnroll(course.id)}
+                  disabled={enrolling[course.id]}
+                  className="mt-3 bg-blue-600 text-white px-4 py-1 rounded hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {enrolling[course.id] ? "Enrolling..." : "Enroll"}
+                </button>
+              )}
             </li>
           ))}
         </ul>
