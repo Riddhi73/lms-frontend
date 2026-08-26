@@ -11,12 +11,12 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || !user) return;
 
     const fetchEnrollments = async () => {
       try {
         const response = await axiosInstance.get(
-          `/api/enrollments?populate[course][populate]=lessons&filters[student][id][$eq]=${user.id}`,
+          `/api/enrollments?filters[student][id][$eq]=${user.id}&populate[course][populate]=lessons`,
         );
         setEnrollments(response.data.data);
       } catch (error) {
@@ -86,13 +86,13 @@ export default function Dashboard() {
             const course = enrollment.course;
             return (
               <li key={enrollment.id} className="border p-4 rounded-lg shadow">
-                <h2 className="text-xl font-semibold">{course.Title}</h2>
-                <p className="text-gray-600">{course.Description}</p>
+                <h2 className="text-xl font-semibold">{course?.Title}</h2>
+                <p className="text-gray-600">{course?.Description}</p>
                 <p className="text-sm text-blue-500 mt-2">
-                  Lessons: {course.lessons?.length || 0}
+                  Lessons: {course?.lessons?.length || 0}
                 </p>
                 <Link
-                  href={`/courses/${course.documentId}`}
+                  href={`/courses/${course?.documentId}`}
                   className="mt-3 inline-block bg-green-600 text-white px-4 py-1 rounded hover:bg-green-700"
                 >
                   Start Learning
