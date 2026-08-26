@@ -8,6 +8,8 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const url = `${process.env.NEXT_PUBLIC_STRAPI_URL}/api/courses?populate=lessons`;
+    console.log("Fetching URL:", url);
     const fetchCourses = async () => {
       try {
         const response = await axios.get(
