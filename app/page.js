@@ -1,19 +1,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import axios from "axios";
+import { useAuth } from "@/context/AuthContext";
+import axiosInstance from "@/lib/axios";
+import Link from "next/link";
 
 export default function Home() {
+  const { user, isAuthenticated, logout } = useAuth();
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const url = `${process.env.NEXT_PUBLIC_STRAPI_URL}/api/courses?populate=lessons`;
-    console.log("Fetching URL:", url);
     const fetchCourses = async () => {
       try {
-        const response = await axios.get(
-          `${process.env.NEXT_PUBLIC_STRAPI_URL}/api/courses?populate=lessons`,
+        const response = await axiosInstance.get(
+          "/api/courses?populate=lessons",
         );
         setCourses(response.data.data);
       } catch (error) {
@@ -32,7 +33,32 @@ export default function Home() {
 
   return (
     <div className="p-8 max-w-4xl mx-auto">
-      <h1 className="text-3xl font-bold mb-6">📚 Available Courses</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">📚 Available Courses</h1>
+        <div>
+          {isAuthenticated ? (
+            <div className="flex items-center gap-4">
+              <span className="text-sm text-gray-600">
+                👋 {user?.username} ({user?.user_type})
+              </span>
+              <button
+                onClick={logout}
+                className="text-sm bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
+              >
+                Logout
+              </button>
+            </div>
+          ) : (
+            <Link
+              href="/auth/login"
+              className="text-sm bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
+            >
+              Login / Signup
+            </Link>
+          )}
+        </div>
+      </div>
+
       {courses.length === 0 ? (
         <p>No courses found yet.</p>
       ) : (
