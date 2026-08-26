@@ -31,16 +31,26 @@ export default function Home() {
   const handleEnroll = async (courseId) => {
     setEnrolling((prev) => ({ ...prev, [courseId]: true }));
     try {
-      await axiosInstance.post("/api/enrollments", {
+      const payload = {
         data: {
           student: user.id,
           course: courseId,
         },
-      });
-      alert("✅ Successfully enrolled!");
+      };
+      console.log("Enrolling in course with ID:", courseId);
+      console.log("Sending payload:", JSON.stringify(payload, null, 2));
+
+      const response = await axiosInstance.post("/api/enrollments", payload);
+
+      console.log("Enrollment response:", response.data);
+      alert("Successfully enrolled!");
     } catch (error) {
       console.error("Enrollment error:", error);
-      alert("❌ Failed to enroll. You might already be enrolled.");
+      const strapiError =
+        error.response?.data?.error?.message ||
+        error.message ||
+        "Enrollment failed";
+      alert(`${strapiError}`);
     } finally {
       setEnrolling((prev) => ({ ...prev, [courseId]: false }));
     }
@@ -58,7 +68,7 @@ export default function Home() {
           {isAuthenticated ? (
             <div className="flex items-center gap-4">
               <span className="text-sm text-gray-600">
-                👋 {user?.username} ({user?.user_type})
+                {user?.username} ({user?.user_type})
               </span>
               <Link
                 href="/dashboard"
