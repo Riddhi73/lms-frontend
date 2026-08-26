@@ -6,7 +6,7 @@ import axiosInstance from "@/lib/axios";
 import Link from "next/link";
 
 export default function Home() {
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated, userType, logout } = useAuth();
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [enrolling, setEnrolling] = useState({});
@@ -68,10 +68,7 @@ export default function Home() {
               </Link>
 
               <button
-                onClick={() => {
-                  // Logout logic from context
-                  window.location.href = "/auth/login";
-                }}
+                onClick={logout}
                 className="text-sm bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
               >
                 Logout
