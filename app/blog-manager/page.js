@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import axiosInstance from "@/lib/axios";
 import { useRouter } from "next/navigation";
@@ -9,7 +9,7 @@ export default function BlogManager() {
   const { user, isAuthenticated, userType } = useAuth();
   const router = useRouter();
   const [posts, setPosts] = useState([]);
-  const [editing, setEditing] = useState(null);
+  const [editing, setEditing] = useState(null); // 🔥 Now stores documentId (string)
   const [form, setForm] = useState({
     title: "",
     body: "",
@@ -18,16 +18,15 @@ export default function BlogManager() {
   });
   const [loading, setLoading] = useState(true);
 
-  // 🔥 EMERGENCY FALLBACK – Force loading to false after 2 seconds
+  // Emergency fallback
   useEffect(() => {
     const timer = setTimeout(() => {
       setLoading(false);
-      console.log("⏰ Emergency fallback: loading set to false");
     }, 2000);
     return () => clearTimeout(timer);
   }, []);
 
-  // Redirect and fetch posts
+  // Fetch posts
   useEffect(() => {
     if (isAuthenticated && !["admin", "content_manager"].includes(userType)) {
       router.push("/");
@@ -39,28 +38,16 @@ export default function BlogManager() {
     }
 
     const fetchPosts = async () => {
-      console.log("📤 Fetching blog posts...");
       try {
         const response = await axiosInstance.get(
           "/api/blog-posts?populate=author&sort=createdAt:desc",
         );
-        console.log("✅ Full response:", response);
-        console.log("✅ Response data:", response.data);
-        console.log("✅ Data array:", response.data?.data);
-
-        const postsData = response.data?.data || [];
-        setPosts(postsData);
-        console.log("✅ Posts set:", postsData);
+        setPosts(response.data.data || []);
       } catch (error) {
-        console.error("❌ Error fetching posts:", error);
-        console.error("📦 Error response:", error.response?.data);
+        console.error("Error fetching posts:", error);
         setPosts([]);
       } finally {
-        console.log("🔄 Setting loading to false");
-        // 🔥 Use setTimeout to ensure the state update happens after the effect cleanup
-        setTimeout(() => {
-          setLoading(false);
-        }, 0);
+        setLoading(false);
       }
     };
 
@@ -72,33 +59,51 @@ export default function BlogManager() {
     try {
       const payload = {
         data: {
-          ...form,
+          title: form.title,
+          body: form.body,
+          coverImageUrl: form.coverImageUrl,
+          blogStatus: form.status,
           author: user.id,
         },
       };
+
+      console.log("📤 Sending payload:", JSON.stringify(payload, null, 2));
+
+      let response;
       if (editing) {
-        await axiosInstance.put(`/api/blog-posts/${editing}`, payload);
+        // 🔥 editing is now a documentId (string)
+        console.log(`✏️ Updating post documentId: ${editing}`);
+        response = await axiosInstance.put(
+          `/api/blog-posts/${editing}`,
+          payload,
+        );
       } else {
-        await axiosInstance.post("/api/blog-posts", payload);
+        response = await axiosInstance.post("/api/blog-posts", payload);
       }
+
+      console.log("✅ Post saved:", response.data);
       alert("✅ Post saved!");
       setForm({ title: "", body: "", coverImageUrl: "", status: "draft" });
       setEditing(null);
-      // Refetch posts after save
-      const response = await axiosInstance.get(
+
+      // Refetch posts
+      const fetchResponse = await axiosInstance.get(
         "/api/blog-posts?populate=author&sort=createdAt:desc",
       );
-      setPosts(response.data.data);
+      setPosts(fetchResponse.data.data);
     } catch (error) {
-      console.error("Error saving post:", error);
-      alert("❌ Failed to save post.");
+      console.error("❌ Error saving post:", error);
+      console.error("📦 Full error response:", error.response?.data);
+      const errorMessage =
+        error.response?.data?.error?.message || error.message;
+      alert(`❌ Failed to save post: ${errorMessage}`);
     }
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (documentId) => {
     if (!confirm("Are you sure you want to delete this post?")) return;
     try {
-      await axiosInstance.delete(`/api/blog-posts/${id}`);
+      await axiosInstance.delete(`/api/blog-posts/${documentId}`);
       alert("✅ Post deleted.");
       const response = await axiosInstance.get(
         "/api/blog-posts?populate=author&sort=createdAt:desc",
@@ -193,7 +198,7 @@ export default function BlogManager() {
       <ul className="space-y-4">
         {posts.map((post) => (
           <li
-            key={post.id}
+            key={post.documentId}
             className="border p-4 rounded-lg shadow flex justify-between items-center"
           >
             <div>
@@ -202,24 +207,25 @@ export default function BlogManager() {
                 Status:{" "}
                 <span
                   className={`px-2 py-1 text-xs rounded ${
-                    post.status === "published"
+                    post.blogStatus === "published"
                       ? "bg-green-100 text-green-800"
                       : "bg-yellow-100 text-yellow-800"
                   }`}
                 >
-                  {post.status}
+                  {post.blogStatus}
                 </span>
               </p>
             </div>
             <div>
               <button
                 onClick={() => {
-                  setEditing(post.id);
+                  console.log("✏️ Editing post:", post);
+                  setEditing(post.documentId); // 🔥 Store documentId
                   setForm({
-                    title: post.title,
-                    body: post.body,
+                    title: post.title || "",
+                    body: post.body || "",
                     coverImageUrl: post.coverImageUrl || "",
-                    status: post.status,
+                    status: post.blogStatus || "draft",
                   });
                 }}
                 className="text-blue-600 hover:underline mr-4"
@@ -227,7 +233,7 @@ export default function BlogManager() {
                 Edit
               </button>
               <button
-                onClick={() => handleDelete(post.id)}
+                onClick={() => handleDelete(post.documentId)} // 🔥 Pass documentId
                 className="text-red-600 hover:underline"
               >
                 Delete

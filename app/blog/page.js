@@ -13,7 +13,7 @@ export default function BlogPage() {
     const fetchPosts = async () => {
       try {
         const response = await axiosInstance.get(
-          "/api/blog-posts?filters[status][$eq]=published&populate=author&sort=createdAt:desc",
+          "/api/blog-posts?filters[blogStatus][$eq]=published&populate=author&sort=createdAt:desc",
         );
         setPosts(response.data.data);
       } catch (error) {
@@ -37,7 +37,10 @@ export default function BlogPage() {
       ) : (
         <div className="space-y-6">
           {posts.map((post) => (
-            <article key={post.id} className="border p-6 rounded-lg shadow">
+            <article
+              key={post.documentId}
+              className="border p-6 rounded-lg shadow"
+            >
               {post.coverImageUrl && (
                 <Image
                   src={post.coverImageUrl}
