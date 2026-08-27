@@ -18,12 +18,17 @@ export default function BlogManager() {
   });
   const [loading, setLoading] = useState(true);
 
-  // 🔥 Cleanup flag to prevent state updates on unmount
-  const isMounted = useRef(true);
+  // 🔥 EMERGENCY FALLBACK – Force loading to false after 2 seconds
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLoading(false);
+      console.log("⏰ Emergency fallback: loading set to false");
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Redirect and fetch posts
   useEffect(() => {
-    // Redirect if not allowed
     if (isAuthenticated && !["admin", "content_manager"].includes(userType)) {
       router.push("/");
       return;
@@ -33,31 +38,34 @@ export default function BlogManager() {
       return;
     }
 
-    // 🔥 Fetch posts inside the effect
     const fetchPosts = async () => {
+      console.log("📤 Fetching blog posts...");
       try {
         const response = await axiosInstance.get(
           "/api/blog-posts?populate=author&sort=createdAt:desc",
         );
-        if (isMounted.current) {
-          setPosts(response.data.data);
-        }
+        console.log("✅ Full response:", response);
+        console.log("✅ Response data:", response.data);
+        console.log("✅ Data array:", response.data?.data);
+
+        const postsData = response.data?.data || [];
+        setPosts(postsData);
+        console.log("✅ Posts set:", postsData);
       } catch (error) {
-        console.error("Error fetching posts:", error);
+        console.error("❌ Error fetching posts:", error);
+        console.error("📦 Error response:", error.response?.data);
+        setPosts([]);
       } finally {
-        if (isMounted.current) {
+        console.log("🔄 Setting loading to false");
+        // 🔥 Use setTimeout to ensure the state update happens after the effect cleanup
+        setTimeout(() => {
           setLoading(false);
-        }
+        }, 0);
       }
     };
 
     fetchPosts();
-
-    // Cleanup
-    return () => {
-      isMounted.current = false;
-    };
-  }, [isAuthenticated, userType]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, userType, router]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -193,7 +201,11 @@ export default function BlogManager() {
               <p className="text-sm text-gray-500">
                 Status:{" "}
                 <span
-                  className={`px-2 py-1 text-xs rounded ${post.status === "published" ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800"}`}
+                  className={`px-2 py-1 text-xs rounded ${
+                    post.status === "published"
+                      ? "bg-green-100 text-green-800"
+                      : "bg-yellow-100 text-yellow-800"
+                  }`}
                 >
                   {post.status}
                 </span>
