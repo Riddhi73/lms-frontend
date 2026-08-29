@@ -76,7 +76,27 @@ export default function Home() {
               >
                 My Courses
               </Link>
+              {/* 🔥 NEW: Instructor Dashboard link */}
+              {["admin", "content_manager", "instructor"].includes(
+                userType,
+              ) && (
+                <Link
+                  href="/instructor"
+                  className="text-sm bg-purple-600 text-white px-3 py-1 rounded hover:bg-purple-700"
+                >
+                  Instructor Dashboard
+                </Link>
+              )}
 
+              {/* 🔥 NEW: Admin Panel link */}
+              {userType === "admin" && (
+                <Link
+                  href="/admin"
+                  className="text-sm bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700"
+                >
+                  Admin Panel
+                </Link>
+              )}
               <button
                 onClick={logout}
                 className="text-sm bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
@@ -115,6 +135,32 @@ export default function Home() {
                   {enrolling[course.id] ? "Enrolling..." : "Enroll"}
                 </button>
               )}
+              {/* 🔥 NEW: Instructor/Admin/CM course management actions */}
+              {isAuthenticated &&
+                ["admin", "content_manager", "instructor"].includes(
+                  userType,
+                ) && (
+                  <div className="mt-3 flex gap-2">
+                    <Link
+                      href={`/instructor/courses/${course.documentId}/edit`}
+                      className="text-sm bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600"
+                    >
+                      ✏️ Edit
+                    </Link>
+                    <Link
+                      href={`/instructor/courses/${course.documentId}/lessons`}
+                      className="text-sm bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600"
+                    >
+                      📝 Lessons
+                    </Link>
+                    {/* 🔥 Admin/CM can delete any course */}
+                    {["admin", "content_manager"].includes(userType) && (
+                      <button className="text-sm bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600">
+                        🗑️ Delete
+                      </button>
+                    )}
+                  </div>
+                )}
             </li>
           ))}
         </ul>

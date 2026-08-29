@@ -41,6 +41,15 @@ export function middleware(request) {
     }
   }
 
+  // 4. Blog Manager - only admin and content_manager
+  if (path.startsWith("/blog-manager")) {
+    if (!token)
+      return NextResponse.redirect(new URL("/auth/login", request.url));
+    if (!["admin", "content_manager"].includes(userType)) {
+      return NextResponse.redirect(new URL("/blog", request.url));
+    }
+  }
+
   return NextResponse.next();
 }
 
