@@ -68,7 +68,7 @@ export default function Home() {
           {isAuthenticated ? (
             <div className="flex items-center gap-4">
               <span className="text-sm text-gray-600">
-                {user?.username} ({user?.user_type})
+                👋 {user?.username} ({user?.user_type})
               </span>
               <Link
                 href="/dashboard"
@@ -76,6 +76,7 @@ export default function Home() {
               >
                 My Courses
               </Link>
+
               {/* 🔥 NEW: Instructor Dashboard link */}
               {["admin", "content_manager", "instructor"].includes(
                 userType,
@@ -97,6 +98,7 @@ export default function Home() {
                   Admin Panel
                 </Link>
               )}
+
               <button
                 onClick={logout}
                 className="text-sm bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
@@ -126,6 +128,8 @@ export default function Home() {
               <p className="text-sm text-blue-500 mt-2">
                 Lessons: {course.lessons?.length || 0}
               </p>
+
+              {/* 🔥 Student: Enroll button */}
               {isAuthenticated && userType === "student" && (
                 <button
                   onClick={() => handleEnroll(course.id)}
@@ -135,6 +139,7 @@ export default function Home() {
                   {enrolling[course.id] ? "Enrolling..." : "Enroll"}
                 </button>
               )}
+
               {/* 🔥 NEW: Instructor/Admin/CM course management actions */}
               {isAuthenticated &&
                 ["admin", "content_manager", "instructor"].includes(
