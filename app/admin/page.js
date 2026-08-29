@@ -9,12 +9,16 @@ export default function AdminPage() {
   const { user, isAuthenticated, userType } = useAuth();
   const router = useRouter();
   const [users, setUsers] = useState([]);
-  const [stats, setStats] = useState({});
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    totalCourses: 0,
+    totalEnrollments: 0,
+    students: 0,
+  });
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(null);
 
   useEffect(() => {
-    // Redirect if not admin
     if (isAuthenticated && userType !== "admin") {
       router.push("/");
     }
@@ -24,29 +28,55 @@ export default function AdminPage() {
 
     const fetchData = async () => {
       try {
-        // Fetch all users
-        const usersRes = await axiosInstance.get("/api/users?populate=role");
-        setUsers(usersRes.data);
+        const token = localStorage.getItem("jwt");
 
-        // Fetch stats
-        const coursesRes = await axiosInstance.get("/api/courses");
-        const enrollmentsRes = await axiosInstance.get("/api/enrollments");
+        // 🔥 Fetch users
+        const usersRes = await axiosInstance.get("/api/users?populate=role", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const usersData = usersRes.data;
+        setUsers(usersData);
+
+        // 🔥 Fetch courses (using document ID)
+        const coursesRes = await fetch(
+          `${process.env.NEXT_PUBLIC_STRAPI_URL}/api/courses?pagination[pageSize]=100`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          },
+        );
+        const coursesData = await coursesRes.json();
+
+        // 🔥 Fetch enrollments
+        const enrollmentsRes = await fetch(
+          `${process.env.NEXT_PUBLIC_STRAPI_URL}/api/enrollments?pagination[pageSize]=100`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          },
+        );
+        const enrollmentsData = await enrollmentsRes.json();
+
+        // 🔥 Calculate stats
+        const totalUsers = usersData.length || 0;
+        const totalCourses = coursesData.data?.length || 0;
+        const totalEnrollments = enrollmentsData.data?.length || 0;
+        const students =
+          usersData.filter((u) => u.user_type === "student").length || 0;
+
         setStats({
-          totalUsers: usersRes.data.length,
-          totalCourses: coursesRes.data.data.length,
-          totalEnrollments: enrollmentsRes.data.data.length,
-          // Count roles
-          admins: usersRes.data.filter((u) => u.user_type === "admin").length,
-          contentManagers: usersRes.data.filter(
-            (u) => u.user_type === "content_manager",
-          ).length,
-          instructors: usersRes.data.filter((u) => u.user_type === "instructor")
-            .length,
-          students: usersRes.data.filter((u) => u.user_type === "student")
-            .length,
+          totalUsers,
+          totalCourses,
+          totalEnrollments,
+          students,
         });
       } catch (error) {
         console.error("Error fetching admin data:", error);
+        // 🔥 Set default stats if API fails
+        setStats({
+          totalUsers: 0,
+          totalCourses: 0,
+          totalEnrollments: 0,
+          students: 0,
+        });
       } finally {
         setLoading(false);
       }
@@ -58,10 +88,14 @@ export default function AdminPage() {
   const handleRoleChange = async (userId, newRole) => {
     setUpdating(userId);
     try {
-      await axiosInstance.put(`/api/users/${userId}`, {
-        user_type: newRole,
-      });
-      // Update local state
+      const token = localStorage.getItem("jwt");
+      await axiosInstance.put(
+        `/api/users/${userId}`,
+        { user_type: newRole },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
       setUsers(
         users.map((u) => (u.id === userId ? { ...u, user_type: newRole } : u)),
       );
