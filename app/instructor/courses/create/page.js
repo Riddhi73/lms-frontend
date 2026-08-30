@@ -37,7 +37,9 @@ export default function CreateCoursePage() {
         data: {
           Title: form.Title,
           Description: form.Description,
-          instructor: user.id,
+          instructor: {
+            connect: [{ id: user.id }],
+          },
         },
       };
 
