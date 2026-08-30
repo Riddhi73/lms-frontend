@@ -43,7 +43,7 @@ export default function CreateCoursePage() {
 
       console.log("📤 Creating course:", payload);
 
-      const response = await axiosInstance.post("/api/course", payload);
+      const response = await axiosInstance.post("/api/courses", payload);
 
       console.log("✅ Course created:", response.data);
       alert("✅ Course created successfully!");
