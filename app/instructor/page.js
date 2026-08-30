@@ -26,7 +26,7 @@ export default function InstructorDashboard() {
       try {
         // 🔥 Fetch courses created by this instructor
         const response = await axiosInstance.get(
-          `/api/courses?filters[instructor][id][$eq]=${user.id}&populate=lessons`,
+          `/api/courses?filters[createdBy][id][$eq]=${user.id}&populate=lessons`,
         );
         setCourses(response.data.data);
       } catch (error) {
