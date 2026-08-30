@@ -7,14 +7,13 @@ import axiosInstance from "@/lib/axios";
 import Link from "next/link";
 
 export default function EditCoursePage() {
-  const { documentId } = useParams(); // 🔥 documentId from URL
+  const { documentId } = useParams(); // e.g., "nk8a2cu26gg4wppqunx47o99"
   const { user, isAuthenticated } = useAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ Title: "", Description: "" });
   const [error, setError] = useState("");
-  const [courseId, setCourseId] = useState(null); // 🔥 Store numeric ID
 
   useEffect(() => {
     if (
@@ -36,26 +35,24 @@ export default function EditCoursePage() {
 
     const fetchCourse = async () => {
       try {
-        // 🔥 STEP 1: Fetch course by documentId using filter
-        const response = await axiosInstance.get(
-          `/api/courses?filters[documentId][$eq]=${documentId}`,
-        );
+        console.log("🔍 Fetching course with documentId:", documentId);
+        // 🔥 Use documentId directly in the URL
+        const response = await axiosInstance.get(`/api/courses/${documentId}`);
+        console.log("✅ Course response:", response.data);
 
-        const course = response.data.data[0];
+        // Strapi v5 REST API returns data inside 'data' key
+        const course = response.data.data;
         if (!course) {
           setError("Course not found");
-          setLoading(false);
           return;
         }
 
-        // 🔥 STEP 2: Store the numeric ID for later
-        setCourseId(course.id);
         setForm({
           Title: course.Title || "",
           Description: course.Description || "",
         });
       } catch (error) {
-        console.error("Error fetching course:", error);
+        console.error("❌ Error fetching course:", error);
         setError("Course not found");
       } finally {
         setLoading(false);
@@ -71,7 +68,7 @@ export default function EditCoursePage() {
     setError("");
 
     try {
-      // 🔥 Use the numeric ID for the PUT request
+      // 🔥 Use documentId directly in the URL
       const payload = {
         data: {
           Title: form.Title,
@@ -79,11 +76,13 @@ export default function EditCoursePage() {
         },
       };
 
-      await axiosInstance.put(`/api/courses/${courseId}`, payload);
+      console.log("📤 Updating course with documentId:", documentId);
+      await axiosInstance.put(`/api/courses/${documentId}`, payload);
+
       alert("✅ Course updated successfully!");
       router.push("/instructor");
     } catch (error) {
-      console.error("Error updating course:", error);
+      console.error("❌ Error updating course:", error);
       setError(
         error.response?.data?.error?.message || "Failed to update course",
       );
