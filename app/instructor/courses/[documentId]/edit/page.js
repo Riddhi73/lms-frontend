@@ -7,15 +7,15 @@ import axiosInstance from "@/lib/axios";
 import Link from "next/link";
 
 export default function EditCoursePage() {
-  const { documentId } = useParams();
+  const { documentId } = useParams(); // 🔥 documentId from URL
   const { user, isAuthenticated } = useAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ Title: "", Description: "" });
   const [error, setError] = useState("");
+  const [courseId, setCourseId] = useState(null); // 🔥 Store numeric ID
 
-  // ✅ Hooks before any conditional returns
   useEffect(() => {
     if (
       !isAuthenticated ||
@@ -27,7 +27,6 @@ export default function EditCoursePage() {
 
   useEffect(() => {
     if (!documentId) return;
-    // Don't fetch if not authorized (the redirect effect will handle it)
     if (
       !isAuthenticated ||
       !["admin", "content_manager", "instructor"].includes(user?.user_type)
@@ -37,13 +36,26 @@ export default function EditCoursePage() {
 
     const fetchCourse = async () => {
       try {
-        const response = await axiosInstance.get(`/api/courses/${documentId}`);
-        const course = response.data.data;
+        // 🔥 STEP 1: Fetch course by documentId using filter
+        const response = await axiosInstance.get(
+          `/api/courses?filters[documentId][$eq]=${documentId}`,
+        );
+
+        const course = response.data.data[0];
+        if (!course) {
+          setError("Course not found");
+          setLoading(false);
+          return;
+        }
+
+        // 🔥 STEP 2: Store the numeric ID for later
+        setCourseId(course.id);
         setForm({
           Title: course.Title || "",
           Description: course.Description || "",
         });
       } catch (error) {
+        console.error("Error fetching course:", error);
         setError("Course not found");
       } finally {
         setLoading(false);
@@ -59,13 +71,19 @@ export default function EditCoursePage() {
     setError("");
 
     try {
+      // 🔥 Use the numeric ID for the PUT request
       const payload = {
-        data: { Title: form.Title, Description: form.Description },
+        data: {
+          Title: form.Title,
+          Description: form.Description,
+        },
       };
-      await axiosInstance.put(`/api/courses/${documentId}`, payload);
+
+      await axiosInstance.put(`/api/courses/${courseId}`, payload);
       alert("✅ Course updated successfully!");
       router.push("/instructor");
     } catch (error) {
+      console.error("Error updating course:", error);
       setError(
         error.response?.data?.error?.message || "Failed to update course",
       );
